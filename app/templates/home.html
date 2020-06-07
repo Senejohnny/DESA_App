@@ -1,0 +1,28 @@
+<!Doctype html>
+<html>
+    <head>
+        <title>Upload new File</title>
+    </head>
+    <body>
+        <h1>Upload HLA Dataset </h1>
+            <form action="/" method="POST" enctype=multipart/form-data>
+                <input type=file name=file />
+                <input type=submit value='Upload' />
+                    <p>  {{ posts }} </p>   
+
+        <!-- <h1>Upload Luminex Dataset </h1>
+            <form action="/" method="POST" enctype=multipart/form-data>
+                <input type=file name=file />
+                <input type=submit value='Upload' />
+                    <h3> {{ posts }} </h3>  -->
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <p> {{message}} </p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </form>
+    </body>
+
+</html>

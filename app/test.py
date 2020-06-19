@@ -1,45 +1,25 @@
 import os
 from pathlib import Path
-from DESA import LoadEpitopeDB, DataPreparation
+from DESA import LoadEpitopLoeDB, DataPreparation
+from DESA.LoadEpitopLoeDB import _Load_HLADF, _Load_MFIDF
+# from DESA.Analysis import 
 
+## test code to for Epitope DB
+# EpitopeDB = LoadEpitopeDB.load_EpitopeDB('../data/Epitope_DB_Expossure.xlsx')
+# EpitopeDB = DataPreparation.prep_EpitopeDB(EpitopeDB)
+# # print(EpitopeDB.drop(['PolymorphicResidues', 'Frequency', 'StructEpitope'], axis=1))
+# Allel_type = 'AllAlleles'
+# Exposure = 'Exposed'
+# Reactivity = 'All' #'Confirmed'
+# ElliPro_Score = 'All'
+# EpitopeDB2 = DataPreparation.EpvsHLA2HLAvsEp(EpitopeDB, Allel_type, Exposure, Reactivity, ElliPro_Score)
 
-EpitopeDB = LoadEpitopeDB.load_EpitopeDB('../data/Epitope_DB_Expossure.xlsx')
-EpitopeDB = DataPreparation.prep_EpitopeDB(EpitopeDB)
-# print(EpitopeDB.drop(['PolymorphicResidues', 'Frequency', 'StructEpitope'], axis=1))
-Allel_type = 'AllAlleles'
-Exposure = 'Exposed'
-Reactivity = 'All' #'Confirmed'
-ElliPro_Score = 'All'
-EpitopeDB2 = DataPreparation.EpvsHLA2HLAvsEp(EpitopeDB, Allel_type, Exposure, Reactivity, ElliPro_Score)
-    
-# print({'Exposed' : 'Yes', 'Not Exposed': 'No',}.get(Exposure))
-print(EpitopeDB2)
+"""
+The MFI only takes into account the ManConcl_Immucor information 
+"""
+MFI = _Load_MFIDF('~/UMCUtrecht/RawData/MFI.csv')
+MFI = DataPreparation.prep_MFI(MFI, Exclude_Locus=['DP'])
 
-def timeit(func):
-        import time
-        import functools
-
-    @functools.wraps(func) # Without the use of this decorator factory, the name of the example function would have been 'wrapper', 
-                           # and the docstring of the original example() would have been lost.
-    def wrapper(*args, **kwargs):
-        tic = time.perf_counter()
-        result = func(*args, **kwargs)
-        diff = tic - time.perf_counter()
-        print(f'Function {func.__name__} executed in {diff}')
-    return result
-return wrapper
-
-def logit(method):
-        import logging
-        import functools
-        logging.basicConfig(filename=f'./logging/{method.__name__}.log', level=logging.INFO)
-        
-        @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        logging.info(f'Ran with args: {args}, and kwargs {kwargs}')
-    return method(*args, **kwargs)
-return wrapper
-
-
-
-
+HLA = _Load_HLADF('~/UMCUtrecht/ProcessedData/UpscaledHLA.xlsx')
+HLA = DataPreparation.prep_HLA(HLA)
+print(MFI.Locus.value_counts())

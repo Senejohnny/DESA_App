@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np 
+from DESA.decorators import timer 
 from typing import Union, List
+from DESA.utils import HLAlengthcheck
 
 
 #####################################################################################
@@ -16,11 +18,53 @@ def prep_EpitopeDB(EpitopeDB:pd.DataFrame) -> pd.DataFrame:
     EpitopeDB['AllAlleles'] = EpitopeDB['AllAlleles'].apply(lambda x: set(sorted(x.split(sep=','))))
     EpitopeDB = EpitopeDB.drop(['PolymorphicResidues', 'Frequency', 'StructEpitope'], axis=1)
     return EpitopeDB
+
+#####################################################################################
+# Preprocess the HLA Data Frame from Donor and Recipient 
+#####################################################################################
+def prep_HLA(df:pd.DataFrame) -> pd.DataFrame:
+    """ 
+    Cleaning steps: 1) Remove the letter G from the data frame if exist and split the HLA's and put them in a set, 2) check the length 
+    of HLA and tailor it down to  the rqeuired detail (no more information than Allel by truncating the specific HLA protein and 
+    further details). For example, the HLA DRB1* 13:01:01 is changed into DRB1* 13:01.
+    """
+
+    # Remove character 'G' from the data set 
+    df['Recipient_HLA'] = df['Recipient_HLA'].apply(lambda x: set(x.replace('G','').split()))
+    df['Donor_HLA'] = df['Donor_HLA'].apply(lambda x: set(x.replace('G','').split()))
     
+    # Clean the HLA's that are longer than normal (Have more detail, i.e. twice the character ':')
+    df['Recipient_HLA'] = [set([HLAlengthcheck(HLA) for HLA in Set]) for Set in df['Recipient_HLA']]
+    df['Donor_HLA'] = [set([HLAlengthcheck(HLA) for HLA in Set]) for Set in df['Donor_HLA']]
+    return df
+
 #####################################################################################
-# Filter and then Convert the EpitopeDB (Epitope vs HLA) to a HLA vs Epitope Table 
+# Preprocess the MFI Data Frame 
 #####################################################################################
-def EpvsHLA2HLAvsEp(EpitopeDB:pd.DataFrame, Allel_type:str, Exposure:str, Reactivity:str, ElliPro_Score:Union[List[str], str]) -> pd.DataFrame:
+def prep_MFI(MFI:pd.DataFrame, Exclude_Locus:List[str]=['DP']) -> pd.DataFrame:
+    """
+    Filter the MFI data based on HLA Locus. 
+    Parameters:
+        MFI: The MFI Data Frame
+        Exclude_Locus: A  list of Locuses at which we are not interested, possible choices ['A', 'B', 'C', 'DR', 'DQ', 'DP'] 
+    """
+    if len(Exclude_Locus)!=0:
+        ind_dp = MFI['Locus'].apply(lambda x: x in Exclude_Locus)
+        return MFI[~ind_dp] 
+    else:
+        return MFI
+
+#####################################################################################
+# Filter and then reorder the EpitopeDB [Epitope vs HLA] to [HLA vs Epitope] Table 
+#####################################################################################
+@timer
+def EpvsHLA2HLAvsEp(
+    EpitopeDB:pd.DataFrame, 
+    Allel_type:str, 
+    Exposure:str, 
+    Reactivity:str, 
+    ElliPro_Score:Union[List[str], str],
+    ) -> pd.DataFrame:
     """
     The input is EpitopevsHLA table, typ of HLA that we would like to take into account. The output is a data frame containing the HLAvsEpitope Table, with a HLA and Epitope Column
     
@@ -49,7 +93,7 @@ def EpvsHLA2HLAvsEp(EpitopeDB:pd.DataFrame, Allel_type:str, Exposure:str, Reacti
 
     EpitopeDB = EpitopeDB[['Epitope', Allel_type]]
         
-    # Define a dictionary in which the new table will reside 
+    # After Filtering start with Reordering a dictionary in which the new table will reside 
     HLA_Epitopes = {'HLA': [], 'Epitope': []}
     # Get unique HLA and find all the Epitopes 
     for s in (EpitopeDB[Allel_type].values):
@@ -60,4 +104,5 @@ def EpvsHLA2HLAvsEp(EpitopeDB:pd.DataFrame, Allel_type:str, Exposure:str, Reacti
                 Epitope = set(EpitopeDB[ind]['Epitope'].values) # set assignment is taking place here
                 HLA_Epitopes['Epitope'].append(Epitope)
     return pd.DataFrame(HLA_Epitopes)
+
 

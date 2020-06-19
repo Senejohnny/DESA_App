@@ -60,3 +60,4 @@ def EpvsHLA2HLAvsEp(EpitopeDB:pd.DataFrame, Allel_type:str, Exposure:str, Reacti
                 Epitope = set(EpitopeDB[ind]['Epitope'].values) # set assignment is taking place here
                 HLA_Epitopes['Epitope'].append(Epitope)
     return pd.DataFrame(HLA_Epitopes)
+

@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block title %}<h1>Upload HLA Dataset </h1>{% endblock %}
+{% block content %}
+<h1>Upload HLA Dataset </h1>
+<form action="/" method="POST" enctype=multipart/form-data>
+    <input type=file name=file />
+    <input type=submit value='Upload' />
+        <p>  {{ posts }} </p> 
+        <div>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <p> {{message}} </p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+       </div>
+{% endblock %}

@@ -1,5 +1,5 @@
 from app import app
-from flask import request, redirect, url_for, render_template, flash
+from flask import request, redirect, url_for, render_template, flash, session
 from flask_restful import Resource, Api
 from werkzeug.utils import secure_filename
 import os
@@ -7,7 +7,7 @@ import pandas as pd
 
 app.secret_key = 'session_key'
 
-ALLOWED_EXTENSIONS = {'csv', 'xls'}
+ALLOWED_EXTENSIONS = {'csv', 'xlsx'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -25,13 +25,13 @@ def detectdelimiter(file):
 
 def toDataframe(file):
     if file.filename.rsplit('.', 1)[1].lower() == 'csv':
-        return pd.read_csv(file, sep=f'{detectdelimiter(file)}')
-    if file.filename.rsplit('.', 1)[1].lower() == 'xls':
+        return pd.read_csv(file, sep=';') # Only support ; seprated csv at the moment
+    if file.filename.rsplit('.', 1)[1].lower() == 'xlsx':
         return pd.read_excel(file)
 
-@app.route('/')
+@app.route('/index')
 def index():
-    return render_template('home.html')
+    return render_template('index.html')
 
 @app.route('/', methods=['GET', 'POST'])
 def upload():
@@ -45,15 +45,20 @@ def upload():
         # submit an empty part without filename
         if file.filename == '':
             flash('No selected file')
-            # return render_template('home.html')
             return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
+            flash(f'Dataset {file.filename} successfully uploaded')
             print('file name is', filename)
             print(file)
             # secure_filename is needed whenever we want to save a file in our directory
             # file.save(secure_filename(file.filename))
-            df = pd.read_csv(file, sep=';')
+            # df = pd.read_csv(file, sep=';')
+            df = toDataframe(file)
+            # session['HLA_data'] = df.to_json()
             print(df)
-            return render_template('home.html', posts=f'Dataset {file.filename} successfully oploaded')
-    return render_template('home.html')
+            # Do the DESA Analysis:
+            # DESAdf = find_DESA(df,.....)
+            return render_template('home2.html')
+
+    return render_template('home2.html')

@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
-
+import sys
+# print(sys.path)
+print(__name__)
 
 def load_EpitopeDB(path:str) -> pd.DataFrame:
     """

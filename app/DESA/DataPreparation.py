@@ -1,9 +1,11 @@
 import pandas as pd
 import numpy as np 
+import sys
+# print(sys.path)
+print(__name__)
 from DESA.decorators import timer 
 from typing import Union, List
 from DESA.utils import HLAlengthcheck
-
 
 #####################################################################################
 # Preprocess the Epitope DB

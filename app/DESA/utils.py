@@ -23,7 +23,7 @@ def HLAlengthcheck(HLA:str) -> str:
 ######################################################
 # List of sets or set of sets to set
 ###################################################### 
-def return_oneset(input:Union[str,set]) -> set:
+def return_set(input:Union[str,set]) -> set:
     """
     This function returns a set from the values in the set of set or list of sets. e.g. {a, b, c, d } from {{a}, {b,c}, {d}} or [{a}, {b,c}, {d}] 
     """

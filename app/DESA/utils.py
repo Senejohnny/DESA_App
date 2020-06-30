@@ -1,7 +1,9 @@
 import numpy as np
 import regex as re
+import io
 from typing import Union
-
+import csv
+from detect_delimiter import detect
 ######################################################
     # Check the length of HLA
 ###################################################### 
@@ -28,3 +30,13 @@ def return_set(input:Union[str,set]) -> set:
     This function returns a set from the values in the set of set or list of sets. e.g. {a, b, c, d } from {{a}, {b,c}, {d}} or [{a}, {b,c}, {d}] 
     """
     return set([value for Set in input for value in Set])
+
+
+def detectdelimiter(file): 
+    """
+    this will detect the famous delimiters [',', ';', ':', '|', '\t'] 
+    The input is _io.StringIO object. 
+    """
+
+    first_line = file.getvalue().split('\n')[0] # get the first line of the StringIO object
+    return detect(first_line)   # apply the detect method

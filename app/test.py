@@ -2,15 +2,15 @@
 import os
 import sys
 print(sys.path)
-from DESA import LoadEpitopeDB, DataPreparation, Analysis
-from DESA.LoadEpitopeDB import _Load_HLADF, _Load_MFIDF
+from DESA import Loading, DataPreparation, Analysis
+from DESA.Loading import _Load_HLADF, _Load_MFIDF
 # from DESA.Analysis import *
 
 """ 
 The below script assumes that the imported data frames are not null and in good shape. Relevant checks will be done in a separate place.
 """
 # test code to for Epitope DB
-EpitopeDB = LoadEpitopeDB.load_EpitopeDB('../data/Epitope_DB_Expossure.xlsx')
+EpitopeDB = Loading.load_EpitopeDB('../data/Epitope_DB_Expossure.xlsx')
 EpitopeDB = DataPreparation.prep_EpitopeDB(EpitopeDB)
 # print(EpitopeDB.drop(['PolymorphicResidues', 'Frequency', 'StructEpitope'], axis=1))
 Allel_type = 'AllAlleles'

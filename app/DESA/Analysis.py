@@ -1,12 +1,13 @@
 import pandas as pd
 from typing import Tuple, Union, List
 from tqdm import tqdm
-from DESA.utils import return_set
-from DESA.decorators import timer
+from app.DESA.utils import return_set
+from app.DESA.decorators import timer, logger, debug
 from collections import defaultdict
 ##############################################################
 # Per Transplant ID get the Donor and Recipient HLA separately
 ##############################################################
+# @debug
 def get_DonorRecipient_HLA(HLA:pd.DataFrame, TransplantID:int) -> Tuple[set, set]:
     """
     Parameters:
@@ -19,10 +20,10 @@ def get_DonorRecipient_HLA(HLA:pd.DataFrame, TransplantID:int) -> Tuple[set, set
     Donor_HLA = HLA[ind_HLA]['Donor_HLA'].values[0]
     return Donor_HLA, Recipient_HLA
 
-
 ##############################################################
 # Per Transplant ID find Mismatched Epitopes 
 ##############################################################
+# @debug
 def mismatched_Epitopes(Donor_HLA:set, Recipient_HLA:set, HLAvsEpitope:pd.DataFrame) -> Tuple[set, set, set]:
     """
     This function get Donor and Recipient HLA, find their Epitopes and return {Donor Epitopes} - {Recipient Epitopes} 
@@ -44,6 +45,7 @@ def mismatched_Epitopes(Donor_HLA:set, Recipient_HLA:set, HLAvsEpitope:pd.DataFr
 ##############################################################
 # Find HLA on Positive and Negative Beads
 ##############################################################
+# @debug
 def Separate_HLA_Beads(MFI:pd.DataFrame, TransplantID:int) -> Tuple[set, set]:
     """
     This function gets Luminex data and finds the HLA's on the positive and negative beads.
@@ -66,6 +68,7 @@ def Separate_HLA_Beads(MFI:pd.DataFrame, TransplantID:int) -> Tuple[set, set]:
 ##############################################################
 # Positive Epitopes from the Beads 
 ##############################################################
+# @debug
 def positive_Epitopes(HLAvsEpitope:pd.DataFrame, HLA_on_Bead:set) -> Tuple[set, set, str]:
     """
     Find the corresponding Epitope from HLAs on positive and non positive beads. 
@@ -83,12 +86,14 @@ def positive_Epitopes(HLAvsEpitope:pd.DataFrame, HLA_on_Bead:set) -> Tuple[set, 
 ##############################################################
 # Find DESA
 ##############################################################
+# @debug
 def find_DESA(Mismatched_Epitopes:set, Positive_Epitope:set) -> set:
     return Mismatched_Epitopes.intersection(Positive_Epitope)
 
 ##############################################################
 # Find corresponding_HLA of each DESA
 ##############################################################
+
 def DESA_corresponding_HLA(DESA:set, Epitope_PosBead:set, HLAvsEpitope_PosBead:pd.DataFrame) -> set:
     from collections import defaultdict
     desa_corresponding_HLA = defaultdict(set)
@@ -100,7 +105,7 @@ def DESA_corresponding_HLA(DESA:set, Epitope_PosBead:set, HLAvsEpitope_PosBead:p
 #############################################################
 # Write DESA results into a Data Frame
 ##############################################################
-# @timer
+@timer
 def write_DESAdf(
                 HLA:pd.DataFrame, 
                 MFI:pd.DataFrame, 
@@ -117,13 +122,6 @@ def write_DESAdf(
             The default zero value means go over all the Transplants ID in the Data Frame
     """
 
-    # DESA = {
-    #     'TransplantID': [], 
-    #     'Status': [], 
-    #     'DESA_Epitope': [], 
-    #     '#DESA': [], 
-    #     'DESA_corresponding_HLA': [], 
-    #     }
     DESAdic = defaultdict(list)
     for TransplantID in tqdm(HLA['TransplantID'] if TxIDs == None else set(TxIDs)):
         Donor_Recipient_HLA = get_DonorRecipient_HLA(HLA, TransplantID)

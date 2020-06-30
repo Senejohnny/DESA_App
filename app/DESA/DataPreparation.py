@@ -1,11 +1,9 @@
 import pandas as pd
 import numpy as np 
 import sys
-# print(sys.path)
-print(__name__)
-from DESA.decorators import timer 
+from app.DESA.decorators import timer 
 from typing import Union, List
-from DESA.utils import HLAlengthcheck
+from app.DESA.utils import HLAlengthcheck
 
 #####################################################################################
 # Preprocess the Epitope DB
@@ -31,6 +29,9 @@ def prep_HLA(df:pd.DataFrame) -> pd.DataFrame:
     further details). For example, the HLA DRB1* 13:01:01 is changed into DRB1* 13:01.
     """
 
+   
+    column_names = df.columns.tolist()
+    df = df.rename(columns={column_names[0]: 'TransplantID', column_names[1]: 'Recipient_HLA', column_names[2] : 'Donor_HLA' })
     # Remove character 'G' from the data set 
     df['Recipient_HLA'] = df['Recipient_HLA'].apply(lambda x: set(x.replace('G','').split()))
     df['Donor_HLA'] = df['Donor_HLA'].apply(lambda x: set(x.replace('G','').split()))
@@ -50,6 +51,10 @@ def prep_MFI(MFI:pd.DataFrame, Exclude_Locus:List[str]=['DP']) -> pd.DataFrame:
         MFI: The MFI Data Frame
         Exclude_Locus: A  list of Locuses at which we are not interested, possible choices ['A', 'B', 'C', 'DR', 'DQ', 'DP'] 
     """
+
+    MFI['Specificity'] = MFI['Specificity'].apply(lambda x: set(x.split(',')))
+    MFI = MFI.drop(['SampleID', 'CatalogID', 'Gate_LUM', 'Analyte_LUM', 'MedianFI', 'TMeanFI', 'Probe77_MedianFI', 'Probe77_TMeanFI',
+                'CON1_MedianFI', 'CON1_TMeanFI'], axis=1)
     if len(Exclude_Locus)!=0:
         ind_dp = MFI['Locus'].apply(lambda x: x in Exclude_Locus)
         return MFI[~ind_dp] 
@@ -59,43 +64,48 @@ def prep_MFI(MFI:pd.DataFrame, Exclude_Locus:List[str]=['DP']) -> pd.DataFrame:
 #####################################################################################
 # Filter and then reorder the EpitopeDB [Epitope vs HLA] to [HLA vs Epitope] Table 
 #####################################################################################
-@timer
-def EpvsHLA2HLAvsEp(
+def filter_EpitopeDB(
     EpitopeDB:pd.DataFrame, 
     Allel_type:str, 
-    Exposure:str, 
+    DB_Opts:Union[List[str],str], 
     Reactivity:str, 
-    ElliPro_Score:Union[List[str], str],
     ) -> pd.DataFrame:
     """
     The input is EpitopevsHLA table, typ of HLA that we would like to take into account. The output is a data frame containing the HLAvsEpitope Table, with a HLA and Epitope Column
     
-    Allel_type: {LuminexAllel, AllAlleles}
-    Exposure: {Exposed, All(Exposed & not Exposed)}
-    Reactivity: {Confirmed, Al'}
-    ElliPro_Score: {All, High, intermediate, Low, Very Low} default:'All'. Input should be given as a string of 'All' or list or tuple             
+    Allel_type: {Luminex Allel, All Alleles}
+    DB_opts: if Epitope DB is based on Exposure, value is either 'Exposed' or 'All'(Exposed & not Exposed). 
+    If the Epitope DB is based on Ellipro score, value is a list of {'High', intermediate, Low, Very Low}
+    Reactivity: {Confirmed, All'}         
     """
     # Filter the EpitopeDB with Exposure informmation
-    if 'Exposed' in EpitopeDB.columns:
-        if Exposure != 'All':  # If Exposure is not Al then it is Exposed
-            ind_exp = EpitopeDB['Exposed'] ==  {'Exposed' : 'Yes', 'Not Exposed': 'No',}.get(Exposure)
+    if 'Exposed' in EpitopeDB.columns:  # Then DB_opts is a string
+        if DB_Opts != 'All':  # If Exposure is not All then it is Exposed
+            ind_exp = EpitopeDB['Exposed'] ==  'Yes'    #{'Exposed' : 'Yes', 'Not Exposed': 'No',}.get(DB_opts)
             EpitopeDB = EpitopeDB[ind_exp]
         if Reactivity == 'Confirmed':
             ind_reac = EpitopeDB['AntibodyReactivity'] == Reactivity
             EpitopeDB = EpitopeDB[ind_reac]
 
     # Filter the EpitopeDB with ElliPro informmation
-    if 'ElliProScore' in EpitopeDB.columns:
-        if ElliPro_Score != 'All': 
-            ind_scr = EpitopeDB['ElliProScore'].apply(lambda x: x in ElliPro_Score)
+    if 'ElliProScore' in EpitopeDB.columns: # Then DB_opts is a list of strings
+        if set(['High', 'Intermediate', 'Low', 'Very Low']) != set(DB_Opts) : 
+            ind_scr = EpitopeDB['ElliProScore'].apply(lambda x: x in DB_Opts)
             EpitopeDB = EpitopeDB[ind_scr]
         if Reactivity == 'Confirmed':
             ind_reac = EpitopeDB['AntibodyReactivity'] == 'Yes'
             EpitopeDB = EpitopeDB[ind_reac]
+    Allel_type = Allel_type.replace(' ','') # Remove white space from Allel_type name  
+    return EpitopeDB[['Epitope', Allel_type]]
 
-    EpitopeDB = EpitopeDB[['Epitope', Allel_type]]
-        
-    # After Filtering start with Reordering a dictionary in which the new table will reside 
+@timer
+def EpvsHLA2HLAvsEp(EpitopeDB:pd.DataFrame, Allel_type:str) -> pd.DataFrame:
+    """
+    The input is EpitopevsHLA table, typ of HLA that we would like to take into account. 
+    The output is a data frame containing the HLAvsEpitope Table, with a HLA and Epitope Column         
+    """
+
+    Allel_type = Allel_type.replace(' ','')
     HLA_Epitopes = {'HLA': [], 'Epitope': []}
     # Get unique HLA and find all the Epitopes 
     for s in (EpitopeDB[Allel_type].values):
